@@ -62,9 +62,12 @@ class SqlParser():
         try:
             self.filepath = filepath
 
-            f = open(filepath).read()
+            f = open(filepath).read().split(';')
+            print(f)
 
             parsed_file = {'value': f}
             return parsed_file
         except:
             raise FileNotFoundError('File not found.')
+
+SqlParser('tests/sample.sql')

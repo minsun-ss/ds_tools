@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 
 class SqlParser():
     """
@@ -61,13 +62,21 @@ class SqlParser():
 
         try:
             self.filepath = filepath
+            queries = [i.strip() for i in open(filepath).read().split(';') if len(i.strip())>0]
 
-            f = open(filepath).read().split(';')
-            print(f)
+            # set up the compile dictionary
+            parsed_file = {}
+            NAME_RE = re.compile(r'(?<=\[).+(?=]\n)')
+            QUERY_RE = re.compile(r'(?<=\]\n)[\w\W]+')
 
-            parsed_file = {'value': f}
+            for query in queries:
+                query_name = NAME_RE.search(query)[0]
+                query_sql = QUERY_RE.search(query)[0].strip()
+                parsed_file[query_name] = query_sql
+
+            print(parsed_file)
             return parsed_file
         except:
-            raise FileNotFoundError('File not found.')
+            raise ValueError('Bad config file.')
 
 SqlParser('tests/sample.sql')

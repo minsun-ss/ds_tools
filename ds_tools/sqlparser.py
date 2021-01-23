@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import logging
 
 class SqlParser():
     """
@@ -63,20 +64,37 @@ class SqlParser():
         try:
             self.filepath = filepath
             queries = [i.strip() for i in open(filepath).read().split(';') if len(i.strip())>0]
-
-            # set up the compile dictionary
-            parsed_file = {}
-            NAME_RE = re.compile(r'(?<=\[).+(?=]\n)')
-            QUERY_RE = re.compile(r'(?<=\]\n)[\w\W]+')
-
-            for query in queries:
-                query_name = NAME_RE.search(query)[0]
-                query_sql = QUERY_RE.search(query)[0].strip()
-                parsed_file[query_name] = query_sql
-
-            print(parsed_file)
-            return parsed_file
         except:
-            raise ValueError('Bad config file.')
+            logging.log('Failure to open file.')
+            return
+
+        # set up the compile dictionary
+        parsed_file = {}
+        NAME_RE = re.compile(r'(?<=\[).+(?=]\n)')
+        QUERY_RE = re.compile(r'(?<=\]\n)[\w\W]+')
+        SPLIT_QUERY_RE = re.compile(r'(?<=\.)\d*')
+
+        for query in queries:
+            query_name = NAME_RE.search(query)[0]
+            query_sql = QUERY_RE.search(query)[0].strip()
+
+            # combine queries together
+            query_vals = query_name.split('.')
+
+            if len(query_vals)==1:
+                parsed_file[query_vals[0]] = query_sql
+            else:
+                if parsed_file.get(query_vals[0]) is None:
+                    parsed_file[query_vals[0]] = {}
+                    parsed_file.get(query_vals[0])[int(query_vals[1])] = query_sql
+                else:
+                    parsed_file.get(query_vals[0])[int(query_vals[1])] = query_sql
+
+        for i, val in parsed_file.items():
+            if isinstance(val, (dict)):
+                joined_sql = '; '.join([value for key, value in sorted(val.items())]) + ';'
+                parsed_file[i] = joined_sql
+
+        return parsed_file
 
 SqlParser('tests/sample.sql')
